@@ -90,8 +90,40 @@ def delete_account(ban):
     conn.close()
 
 
+def transfer_money(from_account, to_account, amount):
+    """
+    :param from_account: Account
+    :param to_account: Account
+    :param amount: Monetary units
+    :return: None
+    """
+    conn = sqlite3.connect(db_file)
+
+    # TODO: fetch accounts from the database, to make sure we're working on the latest entities
+
+    # validate
+    if from_account.balance < amount:
+        raise TransactionNotAllowed(from_account.ban, to_account.ban, "insufficient funds")
+
+    # perform transaction
+    from_account.balance = from_account.balance - amount
+    to_account.balance = to_account.balance + amount
+    update_account(from_account)
+    update_account(to_account)
+
+    conn.commit()
+    conn.close()
+
+
 class AccountNotFound(Exception):
     """Exception raised when BAN was not found in the DB"""
 
     def __init__(self, ban):
         super().__init__("Account {} not found".format(ban))
+
+
+class TransactionNotAllowed(Exception):
+    """Exception raised when transaction cannot be performed because of e.g. insufficient funds"""
+
+    def __init__(self, ban_1, ban_2, reason):
+        super().__init__("Transaction between {} and {} couldn't be done because of {}".format(ban_1, ban_2, reason))
